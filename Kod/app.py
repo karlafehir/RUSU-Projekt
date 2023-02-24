@@ -1,5 +1,5 @@
-import cv2
 import streamlit as st
+import cv2
 from PIL import Image,ImageEnhance
 import numpy as np
 import time
@@ -10,7 +10,7 @@ import mediapipe as mp
 
 
 #Haar Cascade Face Detection
-Haar_Cascade_start = time.time()
+
 face_cascade = cv2.CascadeClassifier('frecog/haarcascade_frontalface_default.xml')
 def haar_cascade_detect_faces(our_image):
     new_img = np.array(our_image.convert('RGB'))
@@ -22,10 +22,10 @@ def haar_cascade_detect_faces(our_image):
     for (x, y, w, h) in faces:
         cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 3)
     return img,faces
-Haar_Cascade_end = time.time()
+
 
 #SSD Face Detection
-SSD_start = time.time()
+
 def ssd_detect_faces(our_image):
     #Load the pre-trained face detection network model
     prototxt = 'deploy.prototxt'
@@ -51,10 +51,10 @@ def ssd_detect_faces(our_image):
             # Draw rectangle around detected faces
             cv2.rectangle(image, (startX, startY), (endX, endY), (255, 0, 0), 3)
     return image
-SSD_end = time.time()
+
 
 #Mediapipe Face Detection
-Mediapipe_start = time.time()
+
 mp_face_detection = mp.solutions.face_detection
 mp_drawing = mp.solutions.drawing_utils
 
@@ -71,7 +71,7 @@ def mediapipe_detect_faces(our_image):
                                       bbox_drawing_spec=mp_drawing.DrawingSpec(color=(255, 0, 0), thickness=3))
             faces = results.detections
     return annotated_image, faces
-Mediapipe_end = time.time()
+
 
 #Effects
 def cartonize_image(our_image):
@@ -103,36 +103,47 @@ def main():
     activities = ["Haar Cascade", "Mediapipe", "Single Shot Detector"]
     choice = st.sidebar.selectbox("Select Activty",activities)
 
-    image_file = st.file_uploader("Upload Image",type=['jpg','png','jpeg'])
+    uploaded_files = st.file_uploader("Upload images",type=['jpg','png','jpeg'], accept_multiple_files=True)
 
-    if image_file is not None:
-            our_image = Image.open(image_file)
-            st.text("Original Image")
-            st.image(our_image)
+    for uploaded_file in uploaded_files:
+        our_image = Image.open(uploaded_file)     
+        st.image(our_image)
 
     if choice == 'Haar Cascade':
         st.subheader("Haar Cascade Face Detection")
         if st.button("Process"):
-                result_img,result_faces = haar_cascade_detect_faces(our_image)
-                st.image(result_img)
-                st.success("Found {} faces".format(len(result_faces)))
-                st.write("Haar Cascade time elapsed: ", (Haar_Cascade_end-Haar_Cascade_start)/1000)
+                Haar_Cascade_start = time.time()
+                for uploaded_file in uploaded_files:
+                    our_image = Image.open(uploaded_file)     
+                    result_img,result_faces = haar_cascade_detect_faces(our_image)
+                    st.image(result_img)
+                    st.success("Found {} faces".format(len(result_faces)))
+                Haar_Cascade_end = time.time()
+                st.write("Haar Cascade time elapsed: ", format(Haar_Cascade_end-Haar_Cascade_start))
 
     if choice == 'Mediapipe':
         st.subheader("Mediapipe Face Detection")
         if st.button("Process"):
+            Mediapipe_start = time.time()
+            for uploaded_file in uploaded_files:
+                our_image = Image.open(uploaded_file)   
                 result_img,result_faces = mediapipe_detect_faces(our_image)
                 st.image(result_img)
                 st.success("Found {} faces".format(len(result_faces)))
-                st.write("Mediapipe time elapsed: ", (Mediapipe_end-Mediapipe_start)/1000)
+            Mediapipe_end = time.time()
+            st.write("Mediapipe time elapsed: ", format(Mediapipe_end-Mediapipe_start))
 
     if choice == 'Single Shot Detector':
         st.subheader("Single Shot Detector Face Detection")
         if st.button("Process"):
-            result_img = ssd_detect_faces(our_image)
-            st.image(result_img)
-            #st.success("Found {} faces".format(len(result_faces)))
-            st.write("SSD time elapsed: ", (SSD_end-SSD_start)/1000)
+            SSD_start = time.time()
+            for uploaded_file in uploaded_files:
+                our_image = Image.open(uploaded_file) 
+                result_img = ssd_detect_faces(our_image)
+                st.image(result_img)
+                #st.success("Found {} faces".format(len(result_faces)))
+            SSD_end = time.time()
+            st.write("SSD time elapsed: ", format(SSD_end-SSD_start))
    
 
     enhance_type = st.sidebar.radio("Enhance Type",["Original","Gray-Scale","Contrast","Brightness",
